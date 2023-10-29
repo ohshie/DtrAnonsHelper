@@ -14,14 +14,17 @@ public class AnnounceCreator
     private readonly List<Announce> _mappedAnnounceList = new();
     private readonly ILogger<AnnounceCreator> _logger;
     private readonly IConfiguration _configuration;
+    private readonly DateConverter _dateConverter;
 
     public AnnounceCreator(CsvParser parser, 
         ILogger<AnnounceCreator> logger, 
-        IConfiguration configuration)
+        IConfiguration configuration, 
+        DateConverter dateConverter)
     {
         _parser = parser;
         _logger = logger;
         _configuration = configuration;
+        _dateConverter = dateConverter;
     }
 
     public async Task CreateAnnounces(string filePath)
@@ -51,7 +54,7 @@ public class AnnounceCreator
             {
                 Title = announce.Name,
                 StartDate = DateTime.Today.ToString("dd.MM.yyyy"),
-                EndDate = announce.EndDate,
+                EndDate = _dateConverter.Execute(announce.TextDate),
                 ScheduleDate = announce.TextDate,
                 Url = !string.IsNullOrEmpty(announce.Url) ? announce.Url.Split("\"")[1] : ""
             };

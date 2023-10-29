@@ -22,35 +22,19 @@ public class DateConverter
         Воскресенье = 7
     };
     
-    public string Execute()
+    public string Execute(string unformattedDate)
     {
-        var announceDate = GetDefaultAnnounceDate();
-        
-        var unformattedDate = "6 ноября";
+        DateTime announceDate;
         
         if (unformattedDate.Contains(','))
         {
             var splittedOnComma = unformattedDate.Split(',');
-            
-            if (splittedOnComma[0].Contains('-'))
-            {
-                announceDate = WhenContainsHyphen(splittedOnComma[0]);
-            }
-            else
-            {
-                announceDate = DayOfWeekToDate(splittedOnComma[0]);
-            }
+
+            announceDate = splittedOnComma[0].Contains('-') ? WhenContainsHyphen(splittedOnComma[0]) : DayOfWeekToDate(splittedOnComma[0]);
         }
         else
         {
-            if (unformattedDate.Contains('-'))
-            {
-                announceDate = WhenContainsHyphen(unformattedDate);
-            }
-            else
-            {
-                announceDate = DayOfWeekToDate(unformattedDate);
-            }
+            announceDate = unformattedDate.Contains('-') ? WhenContainsHyphen(unformattedDate) : DayOfWeekToDate(unformattedDate);
         }
         
         return announceDate.ToString("dd.MM.yyyy");
