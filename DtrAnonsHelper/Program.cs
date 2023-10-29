@@ -32,7 +32,7 @@ class Program
         {
             var botClient = host.Services.GetRequiredService<BotClient.BotClient>();
             await botClient.BotOperations();
-
+            
             await host.WaitForShutdownAsync();
         }
     }
@@ -52,5 +52,7 @@ class Program
         collection.AddTransient<CsvParser>();
         collection.AddTransient<AnnounceCreator>();
         collection.AddTransient<BotHandleFile>();
+        
+        collection.AddTransient<DateConverter>();
     }
 }
