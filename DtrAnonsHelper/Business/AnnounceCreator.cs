@@ -27,8 +27,10 @@ public class AnnounceCreator
         _dateConverter = dateConverter;
     }
 
-    public async Task CreateAnnounces(string filePath)
+    public async Task<string> CreateAnnounces(string filePath)
     {
+        var status = string.Empty;
+        
         var parsedAnnounces = _parser.ParseCsv(filePath);
         
         foreach (var site in ApiUrls.ApiDictionary)
@@ -37,8 +39,13 @@ public class AnnounceCreator
    
             MappedAnnounceList(parsedAnnounces, site);
 
-            await Create(site.Value, _mappedAnnounceList.ToArray());
+            if (await Create(site.Value, _mappedAnnounceList.ToArray()))
+            {
+                status += $"\n announces on {site.Key} created";
+            };
         }
+
+        return status;
     }
 
     private void MappedAnnounceList(List<AnnounceCsv> parsedAnnounces, KeyValuePair<string, string> site)
@@ -63,7 +70,7 @@ public class AnnounceCreator
         }
     }
     
-    async Task Create(string apiUrl, Announce[] announcesArray)
+    async Task<Boolean> Create(string apiUrl, Announce[] announcesArray)
     {
         using (var client = new HttpClient())
         {
@@ -79,11 +86,12 @@ public class AnnounceCreator
             if (response.IsSuccessStatusCode)
             {
                 _logger.LogInformation("Successfully created announces on {Site}", apiUrl);
-                return;
+                return true;
             }
             
             var errorString = await response.Content.ReadAsStringAsync();
             _logger.LogError("Error! {StatusCode} {Error}", response.StatusCode, errorString);
+            return false;
         }
     }
     string CreateHeader()

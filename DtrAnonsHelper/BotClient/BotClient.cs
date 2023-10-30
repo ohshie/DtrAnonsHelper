@@ -67,9 +67,21 @@ public class BotClient
             
             if (string.IsNullOrEmpty(csvPath)) return;
             
-            await _announceCreator.CreateAnnounces(csvPath);
+            var creationStatus = await _announceCreator.CreateAnnounces(csvPath);
+            if (!string.IsNullOrEmpty(creationStatus))
+            {
+                await _botClient.SendTextMessageAsync(chatId: message.From!.Id, 
+                    text: creationStatus, 
+                    cancellationToken: cancellationToken);
+            }
+            else
+            {
+                await _botClient.SendTextMessageAsync(chatId: message.From!.Id, 
+                    text: "Failed to create announces", 
+                    cancellationToken: cancellationToken);
+            }
             
-           _handleFile.Delete(csvPath); 
+            _handleFile.Delete(csvPath); 
     }
     
     Task HandlePollingErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
