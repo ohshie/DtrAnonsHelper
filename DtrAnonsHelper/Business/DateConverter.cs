@@ -1,4 +1,5 @@
 using NodaTime;
+using NodaTime.Extensions;
 
 namespace DtrAnonsHelper.Business;
 
@@ -55,9 +56,9 @@ public class DateConverter
                 DateTimeStyles.AdjustToUniversal, out var announceDate)) return announceDate;
         
         if (!Enum.TryParse(dayOfTheWeek, out RuDates parsedRuDate)) return GetDefaultAnnounceDate();
-        
-        announceDate =  GetMonday() + TimeSpan.FromDays(Convert.ToInt32(parsedRuDate) - 1);
 
+        announceDate = GetMonday().AddDays(Convert.ToInt32(parsedRuDate) - 1);
+        
         return announceDate;
     }
 
@@ -70,7 +71,7 @@ public class DateConverter
     {
         var nextMonday = GetMonday();
 
-        return (nextMonday + TimeSpan.FromDays(6)).Date;
+        return nextMonday.AddDays(6).Date;
     }
 
     private DateTime GetMonday()
@@ -79,10 +80,10 @@ public class DateConverter
                 .Next(IsoDayOfWeek.Monday)
                 .ToDateOnly()
                 .ToString(),
-            new CultureInfo("ru-Ru"), 
+            new CultureInfo("ru-RU"), 
             DateTimeStyles.AdjustToUniversal, 
             out var nextMonday);
 
-        return nextMonday;
+        return Convert.ToDateTime(nextMonday.ToString("dd.MM.yyyy"));
     }
 }

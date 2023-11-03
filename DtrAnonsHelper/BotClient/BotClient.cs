@@ -56,7 +56,7 @@ public class BotClient
     async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
         _logger.LogWarning("Handling update {Update} type {Type}", update.Id, update.Type);
-
+        
             if (update.Message is not {} message) return;
 
             if (message.Document is null) return;

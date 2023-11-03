@@ -95,8 +95,8 @@ public class AnnounceCreator
         }
     }
     string CreateHeader()
-    { 
-        var auth = $"{DateTime.Now.Day}{_configuration.GetSection("AnnounceKey").GetValue<string>("Secret")}";
+    {
+        var auth = $"{DateTime.Now.ToString("dd")}{_configuration.GetSection("AnnounceKey").GetValue<string>("Secret")}";
 
         using (var md5 = MD5.Create())
         {
