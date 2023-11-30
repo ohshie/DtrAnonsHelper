@@ -15,16 +15,19 @@ public class AnnounceCreator
     private readonly ILogger<AnnounceCreator> _logger;
     private readonly IConfiguration _configuration;
     private readonly DateConverter _dateConverter;
+    private readonly IframeBuilder _iframeBuilder;
 
     public AnnounceCreator(CsvParser parser, 
         ILogger<AnnounceCreator> logger, 
         IConfiguration configuration, 
-        DateConverter dateConverter)
+        DateConverter dateConverter,
+        IframeBuilder iframeBuilder)
     {
         _parser = parser;
         _logger = logger;
         _configuration = configuration;
         _dateConverter = dateConverter;
+        _iframeBuilder = iframeBuilder;
     }
 
     public async Task<string> CreateAnnounces(string filePath)
@@ -63,7 +66,7 @@ public class AnnounceCreator
                 StartDate = DateTime.Today.ToString("dd.MM.yyyy"),
                 EndDate = _dateConverter.Execute(announce.TextDate),
                 ScheduleDate = announce.TextDate,
-                Url = !string.IsNullOrEmpty(announce.Url) ? announce.Url.Split("\"")[1] : ""
+                Url = !string.IsNullOrEmpty(announce.Url) ? _iframeBuilder.Execute(announce.Url) : ""
             };
 
             _mappedAnnounceList.Add(mappedAnnounce);
@@ -82,7 +85,7 @@ public class AnnounceCreator
             var payload = new StringContent(jsonData, Encoding.UTF8, "application/json");
 
             var response = await client.PostAsync($"{apiUrl}{apiEndpoint}", payload);
-
+            
             if (response.IsSuccessStatusCode)
             {
                 _logger.LogInformation("Successfully created announces on {Site}", apiUrl);

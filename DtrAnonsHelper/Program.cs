@@ -27,7 +27,7 @@ class Program
             .ConfigureServices(ConfigureServices)
             .UseConsoleLifetime()
             .Build();
-
+        
         using (host)
         {
             var botClient = host.Services.GetRequiredService<BotClient.BotClient>();
@@ -52,6 +52,7 @@ class Program
         collection.AddTransient<CsvParser>();
         collection.AddTransient<AnnounceCreator>();
         collection.AddTransient<BotHandleFile>();
+        collection.AddTransient<IframeBuilder>();
         
         collection.AddTransient<DateConverter>();
     }
