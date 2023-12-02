@@ -10,7 +10,7 @@ public class CsvParser
     {
         var config = new CsvConfiguration(CultureInfo.InvariantCulture)
         {
-            Delimiter = ";"
+            Delimiter = ","
         };
         
         using (var reader = new StreamReader(filePath))
