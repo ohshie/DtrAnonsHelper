@@ -27,13 +27,13 @@ public class AnnounceCreator
         _announcePoster = announcePoster;
     }
 
-    public async Task<string> CreateAnnounces(string filePath)
+    public async Task<string> CreateAnnounces(string filePath, string apiToken)
     {
         _logger.LogInformation("Attempting to parse provided CSV");
         await _csvToDbParser.Execute(filePath);
         
         _logger.LogInformation("Attempting to get Urls for Announces from corresponding VK groups");
-        var (status, announces) = await _videoUrlFetcher.Execute();
+        var (status, announces) = await _videoUrlFetcher.Execute(apiToken);
         if (!string.IsNullOrEmpty(status)) return status;
         
         foreach (var channelAnnounces in announces)

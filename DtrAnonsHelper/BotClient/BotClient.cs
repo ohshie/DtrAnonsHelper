@@ -65,9 +65,9 @@ public class BotClient
 
             var csvPath = await _handleFile.Download(message);
             
-            if (string.IsNullOrEmpty(csvPath)) return;
-            
-            var creationStatus = await _announceCreator.CreateAnnounces(csvPath);
+            if (string.IsNullOrEmpty(csvPath) || string.IsNullOrEmpty(message.Caption)) return;
+
+            var creationStatus = await _announceCreator.CreateAnnounces(csvPath, message.Caption);
             if (!string.IsNullOrEmpty(creationStatus))
             {
                 await _botClient.SendTextMessageAsync(chatId: message.From!.Id, 

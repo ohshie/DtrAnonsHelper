@@ -62,7 +62,7 @@ class Program
         collection.AddTransient<BotClient.BotClient>();
         
         collection.AddTransient<CsvToDbParser>();
-        collection.AddTransient<AnnounceCreator>();
+        collection.AddTransient<AnnouncePoster>();
         collection.AddTransient<AnnounceCreator>();
         collection.AddTransient<BotHandleFile>();
         collection.AddTransient<VideoUrlFetcher>();
