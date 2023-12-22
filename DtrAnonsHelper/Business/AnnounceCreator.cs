@@ -2,6 +2,7 @@ using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using DtrAnonsHelper.DataLayer;
 using DtrAnonsHelper.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -10,105 +11,47 @@ namespace DtrAnonsHelper.Business;
 
 public class AnnounceCreator
 {
-    private readonly CsvParser _parser;
-    private readonly List<Announce> _mappedAnnounceList = new();
+    private readonly CsvToDbParser _csvToDbParser;
+    private readonly VideoUrlFetcher _videoUrlFetcher;
     private readonly ILogger<AnnounceCreator> _logger;
-    private readonly IConfiguration _configuration;
-    private readonly DateConverter _dateConverter;
-    private readonly IframeBuilder _iframeBuilder;
+    private readonly AnnounceOperator _announceOperator;
+    private readonly AnnouncePoster _announcePoster;
 
-    public AnnounceCreator(CsvParser parser, 
-        ILogger<AnnounceCreator> logger, 
-        IConfiguration configuration, 
-        DateConverter dateConverter,
-        IframeBuilder iframeBuilder)
+    public AnnounceCreator(CsvToDbParser csvToDbParser, 
+        ILogger<AnnounceCreator> logger, VideoUrlFetcher videoUrlFetcher, AnnounceOperator announceOperator, AnnouncePoster announcePoster)
     {
-        _parser = parser;
+        _csvToDbParser = csvToDbParser;
         _logger = logger;
-        _configuration = configuration;
-        _dateConverter = dateConverter;
-        _iframeBuilder = iframeBuilder;
+        _videoUrlFetcher = videoUrlFetcher;
+        _announceOperator = announceOperator;
+        _announcePoster = announcePoster;
     }
 
     public async Task<string> CreateAnnounces(string filePath)
     {
-        var status = string.Empty;
+        _logger.LogInformation("Attempting to parse provided CSV");
+        await _csvToDbParser.Execute(filePath);
         
-        var parsedAnnounces = _parser.ParseCsv(filePath);
+        _logger.LogInformation("Attempting to get Urls for Announces from corresponding VK groups");
+        var (status, announces) = await _videoUrlFetcher.Execute();
+        if (!string.IsNullOrEmpty(status)) return status;
         
-        foreach (var site in ApiUrls.ApiDictionary)
+        foreach (var channelAnnounces in announces)
         {
-            if (parsedAnnounces.All(a => a.Channel != site.Key)) continue;
-   
-            MappedAnnounceList(parsedAnnounces, site);
-
-            if (await Create(site.Value, _mappedAnnounceList.ToArray()))
-            {
-                status += $"\n announces on {site.Key} created";
-            };
-        }
-
-        return status;
-    }
-
-    private void MappedAnnounceList(List<AnnounceCsv> parsedAnnounces, KeyValuePair<string, string> site)
-    {
-        _mappedAnnounceList.Clear();
-        
-        var announcesByChannel = 
-            parsedAnnounces.Where(a => a.Channel == site.Key).ToArray();
-        
-        foreach (var announce in announcesByChannel)
-        {
-            var mappedAnnounce = new Announce
-            {
-                Title = announce.Name,
-                StartDate = DateTime.Today.ToString("dd.MM.yyyy"),
-                EndDate = _dateConverter.Execute(announce.TextDate),
-                ScheduleDate = announce.TextDate,
-                Url = !string.IsNullOrEmpty(announce.Url) ? _iframeBuilder.Execute(announce.Url) : ""
-            };
-
-            _mappedAnnounceList.Add(mappedAnnounce);
-        }
-    }
-    
-    async Task<Boolean> Create(string apiUrl, Announce[] announcesArray)
-    {
-        using (var client = new HttpClient())
-        {
-            var apiEndpoint = "promo";
+            _logger.LogInformation("Attempting to create announces on {Channel}", channelAnnounces.Key);
             
-            client.DefaultRequestHeaders.Add("Auth", $"Bearer {CreateHeader()}");
-
-            var jsonData = JsonSerializer.Serialize(new { data = announcesArray });
-            var payload = new StringContent(jsonData, Encoding.UTF8, "application/json");
-
-            var response = await client.PostAsync($"{apiUrl}{apiEndpoint}", payload);
-            
-            if (response.IsSuccessStatusCode)
+            var success = await _announcePoster.Create(channelAnnounces.Key, channelAnnounces);
+            if (success)
             {
-                _logger.LogInformation("Successfully created announces on {Site}", apiUrl);
-                return true;
+                status = string.Concat(status, $"\n Created announces on {channelAnnounces.Key}");
+                
+                _logger.LogInformation("Successfully created announces on {Channel}", channelAnnounces.Key);
             }
-            
-            var errorString = await response.Content.ReadAsStringAsync();
-            _logger.LogError("Error! {StatusCode} {Error}", response.StatusCode, errorString);
-            return false;
         }
-    }
-    string CreateHeader()
-    {
-        var auth = $"{DateTime.Now.ToString("dd")}{_configuration.GetSection("AnnounceKey").GetValue<string>("Secret")}";
 
-        using (var md5 = MD5.Create())
-        {
-            var input = Encoding.UTF8.GetBytes(auth);
-            var hash = md5.ComputeHash(input);
-
-            var encodedHeader = Convert.ToHexString(hash);
-
-            return encodedHeader.ToLowerInvariant();
-        }
+        _logger.LogWarning("Removing all existing entities from db");
+        await _announceOperator.RemoveAll();
+        
+        return status;
     }
 }

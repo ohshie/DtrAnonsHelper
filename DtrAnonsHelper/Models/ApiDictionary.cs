@@ -2,7 +2,7 @@ namespace DtrAnonsHelper.Models;
 
 public static class ApiUrls
 {
-    public static Dictionary<string, string> ApiDictionary = new()
+    public static readonly Dictionary<string, string> ApiDictionary = new()
         {
             {"РР", "https://rusroman.ru/admin/api/"},
             {"РД", "https://rudetective.tv/admin/api/"},

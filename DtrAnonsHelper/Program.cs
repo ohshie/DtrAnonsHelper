@@ -1,11 +1,15 @@
 ﻿using DtrAnonsHelper.BotClient;
 using DtrAnonsHelper.Business;
+using DtrAnonsHelper.DataLayer;
+using DtrAnonsHelper.DataLayer.DbContext;
+using DtrAnonsHelper.DataLayer.Repository;
+using DtrAnonsHelper.Models;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 using Telegram.Bot;
-using CsvParser = DtrAnonsHelper.Business.CsvParser;
 
 namespace DtrAnonsHelper;
 
@@ -30,6 +34,9 @@ class Program
         
         using (host)
         {
+            var dbContext = host.Services.GetRequiredService<AnonsContext>();
+            await dbContext.Database.EnsureCreatedAsync();
+            
             var botClient = host.Services.GetRequiredService<BotClient.BotClient>();
             await botClient.BotOperations();
             
@@ -44,16 +51,25 @@ class Program
             var token = context.Configuration.GetSection("BotToken").GetValue<string>("BotToken");
             return new TelegramBotClient(token!);
         });
+
+        collection.AddDbContext<AnonsContext>(c =>
+        {
+            c.UseSqlite(context.Configuration.GetConnectionString("DefaultConnection"));
+        });
         
         collection.AddSerilog();
 
         collection.AddTransient<BotClient.BotClient>();
         
-        collection.AddTransient<CsvParser>();
+        collection.AddTransient<CsvToDbParser>();
+        collection.AddTransient<AnnounceCreator>();
         collection.AddTransient<AnnounceCreator>();
         collection.AddTransient<BotHandleFile>();
-        collection.AddTransient<IframeBuilder>();
+        collection.AddTransient<VideoUrlFetcher>();
         
         collection.AddTransient<DateConverter>();
+        
+        collection.AddTransient<IRepository<Announce>, AnonsRepository>();
+        collection.AddTransient<AnnounceOperator>();
     }
 }
