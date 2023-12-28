@@ -34,7 +34,8 @@ public class BotClient
 
         ReceiverOptions receiverOptions = new ReceiverOptions()
         {
-            AllowedUpdates = Array.Empty<UpdateType>()
+            AllowedUpdates = Array.Empty<UpdateType>(),
+            ThrowPendingUpdates = true
         };
 
         _botClient.StartReceiving(
@@ -55,10 +56,10 @@ public class BotClient
     
     async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
-        _logger.LogWarning("Handling update {Update} type {Type}", update.Id, update.Type);
-        
             if (update.Message is not {} message) return;
-
+            
+            _logger.LogWarning("Handling update {Update} type {Type} from {UserName}", update.Id, update.Type, update.Message.From.Username);
+            
             if (message.Document is null) return;
 
             if (!message.Document.FileName!.Contains(".csv")) return;

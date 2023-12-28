@@ -34,13 +34,17 @@ public class AnnounceCreator
         
         _logger.LogInformation("Attempting to get Urls for Announces from corresponding VK groups");
         var (status, announces) = await _videoUrlFetcher.Execute(apiToken);
+        
         if (!string.IsNullOrEmpty(status)) return status;
         
-        foreach (var channelAnnounces in announces)
+        foreach (var channelAnnounces in announces
+                     .SelectMany(group => group)
+                     .GroupBy(a => a.Channel))
         {
             _logger.LogInformation("Attempting to create announces on {Channel}", channelAnnounces.Key);
             
             var success = await _announcePoster.Create(channelAnnounces.Key, channelAnnounces);
+            
             if (success)
             {
                 status = string.Concat(status, $"\n Created announces on {channelAnnounces.Key}");

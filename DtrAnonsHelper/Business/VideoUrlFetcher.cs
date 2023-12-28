@@ -13,9 +13,11 @@ public class VideoUrlFetcher
         _announceOperator = announceOperator;
     }
 
-    public async Task<(string, IEnumerable<IGrouping<string,Announce>>)> Execute(string apiToken)
+    public async Task<(string, IEnumerable<IGrouping<string,Announce>>)> Execute(string tokenUrl)
     {
         var report = string.Empty;
+
+        var apiToken = TokenExtractor(tokenUrl);
         
         var groupedAnnounces = (await _announceOperator.GetAll())
             .GroupBy(a => a.ChannelGroup);
@@ -24,6 +26,7 @@ public class VideoUrlFetcher
         {
             var videoUrlAndNames = await GetUrls(channelGroup.Key, 
                 channelGroup.Count(), apiToken);
+            
             if (!videoUrlAndNames.Any())
             {
                 report = string.Concat(report, "\n Something went wrong processing Url's from VK");
@@ -53,7 +56,7 @@ public class VideoUrlFetcher
     private async Task<List<VideoUrlAndName>?> GetUrls(string channelGroup, 
         int amountOfAnnounceInGroup, string apiToken)
     {
-       var ownerId = VkGroupIdDictionary.ChannelGroupIdMap[channelGroup];
+        var ownerId = VkGroupIdDictionary.ChannelGroupIdMap[channelGroup];
         
         string requestUri = $"https://api.vk.com/method/video.get?" +
                             $"owner_id=-{ownerId}&" +
@@ -78,5 +81,15 @@ public class VideoUrlFetcher
                 return videoInfos;
             }
         }
+    }
+
+    private string TokenExtractor(string url)
+    {
+        var extractedToken = url.Split("token=")
+            .Last()
+            .Split("&expires")
+            .First();
+
+        return extractedToken;
     }
 }
